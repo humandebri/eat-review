@@ -1,0 +1,21 @@
+{
+  "name": "Eat Review - 飲食店レビューdApp",
+  "short_name": "Eat Review",
+  "description": "お気に入りのレストランを見つけて、レビューを共有しましょう",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "categories": ["food", "lifestyle"],
+  "lang": "ja",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
