@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/auth-context";
+import { GlobalNavbar } from "@/components/global-navbar";
 import "./globals.css";
 
 const jetBrainsMono = JetBrains_Mono({ subsets: ["latin"] });
@@ -81,6 +82,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${jetBrainsMono.className} bg-white dark:bg-black`}>
         <AuthProvider>
+          <GlobalNavbar />
           {children}
         </AuthProvider>
       </body>

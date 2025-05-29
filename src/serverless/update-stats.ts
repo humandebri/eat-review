@@ -110,6 +110,9 @@ async function updateRestaurantStats(restaurantId: string, today: string, thirty
         ? Number((weightedSum / weightSum).toFixed(2))
         : 0,
       reviewCount30d: recentReviews.length,
+      averageRating90d: recentReviews.length > 0 
+        ? Number((recentReviews.reduce((sum, r) => sum + r.rating, 0) / recentReviews.length).toFixed(2))
+        : 0,
       lastUpdated: new Date()
     };
     

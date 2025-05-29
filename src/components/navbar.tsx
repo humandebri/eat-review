@@ -18,7 +18,6 @@ export function Navbar({ onAddRestaurant, onInsertDemoData }: NavbarProps) {
         <div className="flex justify-between items-center h-16">
           {/* ロゴ */}
           <Link href="/" className="flex items-center">
-            <span className="text-3xl mr-3">🍽️</span>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
               Eat Review
             </h1>

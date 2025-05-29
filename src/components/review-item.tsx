@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Review } from '@/types/review';
 import { ReviewVoteService } from '@/services/review-vote.service';
 import { ReputationService } from '@/services/reputation.service';
+import { StarRating } from './star-rating';
 
 interface ReviewItemProps {
   review: Review;
@@ -94,16 +95,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
             )}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  className={star <= review.rating ? 'text-yellow-500' : 'text-gray-300'}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
+            <StarRating rating={review.rating} size="sm" />
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {new Date(review.createdAt).toLocaleDateString('ja-JP')}
             </span>
@@ -130,7 +122,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={star <= review.tasteRating! ? 'text-yellow-500 text-xs' : 'text-gray-300 text-xs'}
+                      className={star <= review.tasteRating! ? 'text-yellow-400 text-xs' : 'text-gray-300 text-xs'}
                     >
                       ★
                     </span>
@@ -145,7 +137,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={star <= review.atmosphereRating! ? 'text-yellow-500 text-xs' : 'text-gray-300 text-xs'}
+                      className={star <= review.atmosphereRating! ? 'text-yellow-400 text-xs' : 'text-gray-300 text-xs'}
                     >
                       ★
                     </span>
@@ -160,7 +152,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={star <= review.serviceRating! ? 'text-yellow-500 text-xs' : 'text-gray-300 text-xs'}
+                      className={star <= review.serviceRating! ? 'text-yellow-400 text-xs' : 'text-gray-300 text-xs'}
                     >
                       ★
                     </span>
@@ -175,7 +167,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={star <= review.valuePriceRating! ? 'text-yellow-500 text-xs' : 'text-gray-300 text-xs'}
+                      className={star <= review.valuePriceRating! ? 'text-yellow-400 text-xs' : 'text-gray-300 text-xs'}
                     >
                       ★
                     </span>
@@ -190,7 +182,7 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
-                      className={star <= review.cleanlinessRating! ? 'text-yellow-500 text-xs' : 'text-gray-300 text-xs'}
+                      className={star <= review.cleanlinessRating! ? 'text-yellow-400 text-xs' : 'text-gray-300 text-xs'}
                     >
                       ★
                     </span>

@@ -11,11 +11,14 @@ import { DatastoreService } from '@/services/datastore';
 import { ReviewService } from '@/services/review.service';
 import { StatsService } from '@/services/stats.service';
 import { ReviewItem } from '@/components/review-item';
-import { nanoid } from 'nanoid';
+import { StarRating } from '@/components/star-rating';
+import { GoogleMap } from '@/components/google-map';
+import { useAuth } from '@/contexts/auth-context';
 
 function RestaurantDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const restaurantId = searchParams.get('id');
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -24,9 +27,8 @@ function RestaurantDetailContent() {
   const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({
-    rating: 5,
+    rating: 0,
     comment: '',
-    authorName: '',
     atmosphereRating: undefined as number | undefined,
     tasteRating: undefined as number | undefined,
     serviceRating: undefined as number | undefined,
@@ -34,14 +36,6 @@ function RestaurantDetailContent() {
     cleanlinessRating: undefined as number | undefined
   });
   
-  // 仮のユーザーID（認証実装後に変更）
-  const currentUserId = 'temp-user-' + (typeof window !== 'undefined' ? localStorage.getItem('userId') || nanoid() : '');
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !localStorage.getItem('userId')) {
-      localStorage.setItem('userId', currentUserId);
-    }
-  }, [currentUserId]);
   
   useEffect(() => {
     // Juno Satelliteを初期化
@@ -87,8 +81,18 @@ function RestaurantDetailContent() {
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!restaurantId || !newReview.authorName.trim()) {
-      alert('お名前を入力してください');
+    if (!restaurantId) {
+      alert('レストラン情報が取得できませんでした');
+      return;
+    }
+    
+    if (!user) {
+      alert('レビューを投稿するにはログインが必要です');
+      return;
+    }
+    
+    if (newReview.rating === 0) {
+      alert('総合評価を選択してください');
       return;
     }
     
@@ -97,8 +101,8 @@ function RestaurantDetailContent() {
         restaurantId,
         rating: newReview.rating,
         comment: newReview.comment.trim() || undefined,
-        authorId: currentUserId,
-        authorName: newReview.authorName.trim(),
+        authorId: user.key,
+        authorName: `User-${user.key.substring(0, 8)}`, // principalIDの最初の8文字を使用
         atmosphereRating: newReview.atmosphereRating,
         tasteRating: newReview.tasteRating,
         serviceRating: newReview.serviceRating,
@@ -106,14 +110,16 @@ function RestaurantDetailContent() {
         cleanlinessRating: newReview.cleanlinessRating
       });
       
+      // 統計情報を更新
+      await StatsService.calculateRollingStats(restaurantId);
+      
       // リロード
       await loadRestaurantData();
       
       // フォームをリセット
       setNewReview({
-        rating: 5,
+        rating: 0,
         comment: '',
-        authorName: '',
         atmosphereRating: undefined,
         tasteRating: undefined,
         serviceRating: undefined,
@@ -159,20 +165,6 @@ function RestaurantDetailContent() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      {/* ヘッダー */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            戻る
-          </button>
-        </div>
-      </header>
 
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -196,12 +188,15 @@ function RestaurantDetailContent() {
                   </div>
                   {stats && (
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-orange-500">
-                        {stats.averageRating.toFixed(1)}
-                      </div>
-                      <div className="text-sm text-gray-500">
+                      <StarRating rating={stats.averageRating} size="lg" showNumber={true} />
+                      <div className="text-sm text-gray-500 mt-1">
                         {stats.totalReviews}件のレビュー
                       </div>
+                      {stats.averageRating90d > 0 && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          90日平均: {stats.averageRating90d}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -260,7 +255,7 @@ function RestaurantDetailContent() {
                     <ReviewItem
                       key={review.id}
                       review={review}
-                      currentUserId={currentUserId}
+                      currentUserId={user?.key || ''}
                       onVote={async () => {
                         await loadRestaurantData();
                       }}
@@ -316,6 +311,17 @@ function RestaurantDetailContent() {
                 )}
               </div>
               
+              {/* Google Map */}
+              {(restaurant.location || restaurant.address) && (
+                <div className="mt-6 border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">地図</h3>
+                  <GoogleMap 
+                    location={restaurant.location}
+                    address={restaurant.address}
+                    className="h-64 rounded-lg"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -323,10 +329,16 @@ function RestaurantDetailContent() {
       
       {/* レビュー投稿フォーム（モーダル） */}
       {showReviewForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">レビューを投稿</h2>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowReviewForm(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">レビューを投稿</h2>
               <button
                 onClick={() => setShowReviewForm(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -338,7 +350,7 @@ function RestaurantDetailContent() {
             </div>
             
             <form onSubmit={handleReviewSubmit}>
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   総合評価 <span className="text-red-500">*</span>
                 </label>
@@ -347,33 +359,25 @@ function RestaurantDetailContent() {
                     <button
                       key={star}
                       type="button"
-                      onClick={() => setNewReview({ ...newReview, rating: star })}
-                      className={`text-3xl ${
-                        star <= newReview.rating ? 'text-yellow-400' : 'text-gray-300'
-                      } hover:text-yellow-400 transition-colors`}
+                      onClick={() => {
+                        setNewReview(prev => ({ ...prev, rating: star }));
+                      }}
+                      className={`text-3xl transition-colors cursor-pointer`}
                     >
-                      ★
+                      <span 
+                        className={star <= newReview.rating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                        style={{ color: star <= newReview.rating ? '#fbbf24' : undefined }}
+                      >
+                        {star <= newReview.rating ? '★' : '☆'}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  お名前 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newReview.authorName}
-                  onChange={(e) => setNewReview({ ...newReview, authorName: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="山田太郎"
-                  required
-                />
-              </div>
               
               {/* 詳細評価（オプション） */}
-              <div className="mb-6 space-y-4">
+              <div className="mb-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-700">詳細評価（任意）</h3>
                 
                 {/* 味 */}
@@ -384,18 +388,21 @@ function RestaurantDetailContent() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, tasteRating: star })}
-                        className={`text-2xl ${
-                          newReview.tasteRating && star <= newReview.tasteRating ? 'text-yellow-400' : 'text-gray-300'
-                        } hover:text-yellow-400 transition-colors`}
+                        onClick={() => setNewReview(prev => ({ ...prev, tasteRating: star }))}
+                        className={`text-2xl transition-colors cursor-pointer`}
                       >
-                        ★
+                        <span 
+                          className={newReview.tasteRating && star <= newReview.tasteRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                          style={{ color: newReview.tasteRating && star <= newReview.tasteRating ? '#fbbf24' : undefined }}
+                        >
+                          {newReview.tasteRating && star <= newReview.tasteRating ? '★' : '☆'}
+                        </span>
                       </button>
                     ))}
                     {newReview.tasteRating && (
                       <button
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, tasteRating: undefined })}
+                        onClick={() => setNewReview(prev => ({ ...prev, tasteRating: undefined }))}
                         className="text-xs text-gray-500 hover:text-gray-700 ml-2"
                       >
                         クリア
@@ -412,18 +419,21 @@ function RestaurantDetailContent() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, atmosphereRating: star })}
-                        className={`text-2xl ${
-                          newReview.atmosphereRating && star <= newReview.atmosphereRating ? 'text-yellow-400' : 'text-gray-300'
-                        } hover:text-yellow-400 transition-colors`}
+                        onClick={() => setNewReview(prev => ({ ...prev, atmosphereRating: star }))}
+                        className={`text-2xl transition-colors cursor-pointer`}
                       >
-                        ★
+                        <span 
+                          className={newReview.atmosphereRating && star <= newReview.atmosphereRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                          style={{ color: newReview.atmosphereRating && star <= newReview.atmosphereRating ? '#fbbf24' : undefined }}
+                        >
+                          {newReview.atmosphereRating && star <= newReview.atmosphereRating ? '★' : '☆'}
+                        </span>
                       </button>
                     ))}
                     {newReview.atmosphereRating && (
                       <button
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, atmosphereRating: undefined })}
+                        onClick={() => setNewReview(prev => ({ ...prev, atmosphereRating: undefined }))}
                         className="text-xs text-gray-500 hover:text-gray-700 ml-2"
                       >
                         クリア
@@ -440,18 +450,21 @@ function RestaurantDetailContent() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, serviceRating: star })}
-                        className={`text-2xl ${
-                          newReview.serviceRating && star <= newReview.serviceRating ? 'text-yellow-400' : 'text-gray-300'
-                        } hover:text-yellow-400 transition-colors`}
+                        onClick={() => setNewReview(prev => ({ ...prev, serviceRating: star }))}
+                        className={`text-2xl transition-colors cursor-pointer`}
                       >
-                        ★
+                        <span 
+                          className={newReview.serviceRating && star <= newReview.serviceRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                          style={{ color: newReview.serviceRating && star <= newReview.serviceRating ? '#fbbf24' : undefined }}
+                        >
+                          {newReview.serviceRating && star <= newReview.serviceRating ? '★' : '☆'}
+                        </span>
                       </button>
                     ))}
                     {newReview.serviceRating && (
                       <button
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, serviceRating: undefined })}
+                        onClick={() => setNewReview(prev => ({ ...prev, serviceRating: undefined }))}
                         className="text-xs text-gray-500 hover:text-gray-700 ml-2"
                       >
                         クリア
@@ -468,18 +481,21 @@ function RestaurantDetailContent() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, valuePriceRating: star })}
-                        className={`text-2xl ${
-                          newReview.valuePriceRating && star <= newReview.valuePriceRating ? 'text-yellow-400' : 'text-gray-300'
-                        } hover:text-yellow-400 transition-colors`}
+                        onClick={() => setNewReview(prev => ({ ...prev, valuePriceRating: star }))}
+                        className={`text-2xl transition-colors cursor-pointer`}
                       >
-                        ★
+                        <span 
+                          className={newReview.valuePriceRating && star <= newReview.valuePriceRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                          style={{ color: newReview.valuePriceRating && star <= newReview.valuePriceRating ? '#fbbf24' : undefined }}
+                        >
+                          {newReview.valuePriceRating && star <= newReview.valuePriceRating ? '★' : '☆'}
+                        </span>
                       </button>
                     ))}
                     {newReview.valuePriceRating && (
                       <button
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, valuePriceRating: undefined })}
+                        onClick={() => setNewReview(prev => ({ ...prev, valuePriceRating: undefined }))}
                         className="text-xs text-gray-500 hover:text-gray-700 ml-2"
                       >
                         クリア
@@ -496,18 +512,21 @@ function RestaurantDetailContent() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, cleanlinessRating: star })}
-                        className={`text-2xl ${
-                          newReview.cleanlinessRating && star <= newReview.cleanlinessRating ? 'text-yellow-400' : 'text-gray-300'
-                        } hover:text-yellow-400 transition-colors`}
+                        onClick={() => setNewReview(prev => ({ ...prev, cleanlinessRating: star }))}
+                        className={`text-2xl transition-colors cursor-pointer`}
                       >
-                        ★
+                        <span 
+                          className={newReview.cleanlinessRating && star <= newReview.cleanlinessRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}
+                          style={{ color: newReview.cleanlinessRating && star <= newReview.cleanlinessRating ? '#fbbf24' : undefined }}
+                        >
+                          {newReview.cleanlinessRating && star <= newReview.cleanlinessRating ? '★' : '☆'}
+                        </span>
                       </button>
                     ))}
                     {newReview.cleanlinessRating && (
                       <button
                         type="button"
-                        onClick={() => setNewReview({ ...newReview, cleanlinessRating: undefined })}
+                        onClick={() => setNewReview(prev => ({ ...prev, cleanlinessRating: undefined }))}
                         className="text-xs text-gray-500 hover:text-gray-700 ml-2"
                       >
                         クリア
@@ -517,32 +536,32 @@ function RestaurantDetailContent() {
                 </div>
               </div>
               
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   コメント（任意）
                 </label>
                 <textarea
                   value={newReview.comment}
-                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  rows={4}
+                  rows={3}
                   placeholder="料理の感想、雰囲気、サービスなどについて教えてください"
                 />
               </div>
               
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-lg hover:from-orange-600 hover:to-red-600 transform hover:scale-105 transition-all duration-200"
-                >
-                  投稿する
-                </button>
+              <div className="flex space-x-3 mt-6 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => setShowReviewForm(false)}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   キャンセル
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                  投稿する
                 </button>
               </div>
             </form>

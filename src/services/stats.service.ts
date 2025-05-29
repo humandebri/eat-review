@@ -44,6 +44,9 @@ export class StatsService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    
     // 全レビューを取得
     const allReviews = await ReviewService.getRestaurantReviews(restaurantId);
     
@@ -51,6 +54,16 @@ export class StatsService {
     const recentReviews = allReviews.filter(review => 
       new Date(review.createdAt) >= thirtyDaysAgo
     );
+    
+    // 90日以内のレビューをフィルタ
+    const reviews90d = allReviews.filter(review => 
+      new Date(review.createdAt) >= ninetyDaysAgo
+    );
+    
+    // 90日平均評価の計算
+    const averageRating90d = reviews90d.length > 0
+      ? reviews90d.reduce((sum, r) => sum + r.rating, 0) / reviews90d.length
+      : 0;
     
     // 重み付き平均の計算
     let weightedSum = 0;
@@ -73,6 +86,7 @@ export class StatsService {
       averageRating: Number(averageRating.toFixed(2)),
       weightedAverageRating: Number(weightedAverageRating.toFixed(2)),
       reviewCount30d: recentReviews.length,
+      averageRating90d: Number(averageRating90d.toFixed(2)),
       lastUpdated: new Date()
     };
     

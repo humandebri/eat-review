@@ -37,6 +37,7 @@ export interface RestaurantStats {
   averageRating: number;
   weightedAverageRating: number; // レピュテーション加重平均
   reviewCount30d: number; // 直近30日のレビュー数
+  averageRating90d: number; // 直近90日の平均評価
   lastUpdated: Date;
 }
 
