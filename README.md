@@ -1,144 +1,175 @@
-# 🍽️ Eat Review - ICP上の飲食店レビューdApp
+# Eat Review: 分散型レストランレビュープラットフォーム
 
-Internet Computer Protocol (ICP) 上で動作する分散型飲食店レビューアプリケーション。Junoを使用してデプロイされています。
+## エグゼクティブサマリー
 
-## 🚀 機能
+Eat Reviewは、Internet Computer Protocol (ICP) 上に構築された次世代の分散型レストランレビュープラットフォームです。従来の中央集権的なレビューサービスが抱える問題を解決し、透明性、信頼性、永続性を備えた新しい食体験共有のエコシステムを提供します。
 
-- 🏪 レストラン情報の登録・管理
-- ⭐ レビュー投稿機能
-- 📍 Google Maps統合による位置情報表示
-- 📱 モバイル対応レスポンシブデザイン
-- 🔒 ICP認証による安全なデータ管理
+## 1. ビジョンとミッション
 
-## 🛠 技術スタック
+### ビジョン
+「すべての食体験を公正に評価し、永続的に記録する分散型プラットフォームの構築」
 
-- **フロントエンド**: Next.js 15 + React 19 + TypeScript
+### ミッション
+- レビューの改ざん不可能性を保証
+- レピュテーションベースの公正な評価システムの実現
+- グローバルな食文化の発展への貢献
+
+## 2. 問題提起
+
+### 既存のレビューサービスの課題
+
+#### 2.1 中央集権的な管理
+- プラットフォーム運営者による恣意的な削除・編集
+- アルゴリズムの不透明性
+- データの独占的所有
+
+#### 2.2 信頼性の欠如
+- フェイクレビューの蔓延
+- レビュー操作による不公正な評価
+- インセンティブの歪み
+
+#### 2.3 永続性の欠如
+- サービス終了によるデータ消失リスク
+- 過去のレビュー履歴の改ざん可能性
+
+## 3. ソリューション
+
+### 3.1 ブロックチェーン技術の活用
+
+#### Internet Computer Protocol (ICP)
+- 高速・低コストなブロックチェーン
+- WebAssemblyによる高性能なスマートコントラクト
+- 完全なオンチェーンアプリケーション
+
+#### Juno BaaS
+- 分散型バックエンドサービス
+- IPFS統合によるデータ永続化
+- サーバーレス関数による自動化
+
+### 3.2 レピュテーションシステム
+
+#### 重み付き評価アルゴリズム
+```
+weightedAverage = Σ(rating × authorWeight) / Σ(authorWeight)
+authorWeight = 0.5 + reputationScore × 0.2
+```
+
+#### レピュテーションスコア計算
+```
+reputationScore = normalize(log10(1 + helpfulVotes) - log10(1 + notHelpfulVotes))
+```
+
+### 3.3 分散型アーキテクチャ
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│   ICP Canister   │────▶│  Juno Datastore │
+│  (Next.js)      │     │   (Rust/Wasm)    │     │    (IPFS)       │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+         │                        │                        │
+         └────────────────────────┴────────────────────────┘
+                     Internet Computer Network
+```
+
+## 4. 技術仕様
+
+### 4.1 データモデル
+
+#### レストラン
+- 不変の基本情報
+- 位置情報（緯度・経度）
+- オーナー検証機能
+
+#### レビュー
+- 改ざん不可能な評価記録
+- 多次元評価（味・雰囲気・サービス・価格・清潔さ）
+- タイムスタンプによる時系列管理
+
+#### 統計データ
+- 30日ローリング平均
+- リアルタイム集計
+- 重み付き評価の自動計算
+
+### 4.2 セキュリティとプライバシー
+
+- Internet Identity による認証
+- ゼロ知識証明を活用した匿名レビュー（将来実装）
+- 暗号化されたプライベートレビュー機能（将来実装）
+
+## 5. トークノミクス（将来構想）
+
+### 5.1 EATトークン
+- レビュー投稿報酬
+- 高品質レビューへのインセンティブ
+- ガバナンストークンとしての機能
+
+### 5.2 経済モデル
+```
+トークン配分:
+- レビュー報酬: 40%
+- 開発基金: 20%
+- コミュニティ: 20%
+- 初期投資家: 15%
+- チーム: 5%
+```
+
+## 6. ロードマップ
+
+### Phase 1: MVP (完了)
+- ✅ 基本的なレビュー機能
+- ✅ レピュテーションシステム
+- ✅ 統計・分析機能
+
+### Phase 2: 拡張機能 (2024 Q2)
+- [ ] 画像アップロード（IPFS統合）
+- [ ] NFTバッジシステム
+- [ ] モバイルアプリ
+
+### Phase 3: トークン統合 (2024 Q3)
+- [ ] EATトークンの発行
+- [ ] ステーキングメカニズム
+- [ ] DAO化
+
+### Phase 4: グローバル展開 (2024 Q4)
+- [ ] 多言語対応
+- [ ] 地域別コミュニティ
+- [ ] クロスチェーン統合
+
+## 7. ガバナンス
+
+### 7.1 分散型自律組織（DAO）
+- トークンホルダーによる意思決定
+- スマートコントラクトによる自動執行
+- 透明性のある提案・投票システム
+
+### 7.2 コミュニティ主導
+- レビューガイドラインの策定
+- 悪質行為への対処方針
+- 新機能の優先順位決定
+
+## 8. まとめ
+
+Eat Reviewは、ブロックチェーン技術を活用して食文化の発展に貢献する革新的なプラットフォームです。分散型アーキテクチャにより、透明性、信頼性、永続性を実現し、世界中のユーザーに公正なレビューシステムを提供します。
+
+## 9. 技術スタック
+
+- **ブロックチェーン**: Internet Computer Protocol (ICP)
+- **BaaS**: Juno
+- **フロントエンド**: Next.js 15, React 19, TypeScript
+- **スマートコントラクト**: Rust (WebAssembly)
 - **スタイリング**: Tailwind CSS v4
-- **バックエンド**: Rust (ICP Canister)
-- **インフラ**: Juno Satellite
-- **ブロックチェーン**: Internet Computer Protocol
+- **認証**: Internet Identity
 
-## 📋 環境構築
+## 10. コミュニティとコントリビューション
 
-### 前提条件
+プロジェクトはオープンソースであり、コミュニティからの貢献を歓迎します。
 
-- Node.js 18以上
-- pnpm
-- Docker (ローカル開発用)
-- [DFX](https://internetcomputer.org/docs/current/developer-docs/setup/install/) (オプション)
+- **GitHub**: https://github.com/humandebri/eat-review
+- **Discord**: [準備中]
+- **Twitter**: [準備中]
 
-### セットアップ
+---
 
-1. **リポジトリのクローン**
-```bash
-git clone <repository-url>
-cd eat-review
-```
+*このドキュメントは生きたドキュメントであり、プロジェクトの進化とともに更新されます。*
 
-2. **依存関係のインストール**
-```bash
-pnpm install
-```
-
-3. **環境変数の設定**
-```bash
-cp .env.local.example .env.local
-```
-
-`.env.local`を編集してGoogle Maps APIキーを設定：
-```
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-```
-
-Google Maps APIキーは[Google Cloud Console](https://console.cloud.google.com/)で取得できます。
-
-### 開発サーバーの起動
-
-```bash
-# フロントエンド開発サーバー
-pnpm dev
-
-# ローカルJunoエミュレータ（要Docker）
-juno dev start
-```
-
-http://localhost:3000 でアプリケーションにアクセスできます。
-
-## 🎯 使い方
-
-### 初回セットアップ
-
-1. `/setup`ページにアクセスしてコレクションを初期化
-2. デモデータを追加（ヘッダーの「デモデータ追加」ボタン）
-
-### レストラン登録
-
-1. 「✨ レストランを追加」ボタンをクリック
-2. 必要情報を入力
-   - 店舗名、カテゴリー、住所
-   - 位置情報（Google Mapsで右クリックして緯度・経度を取得）
-   - 営業時間、電話番号など
-
-### レビュー投稿
-
-1. レストランカードをクリックして詳細ページへ
-2. レビューを投稿（実装予定）
-
-## 🚀 デプロイ
-
-### Juno Satelliteへのデプロイ
-
-```bash
-# ビルド
-pnpm build
-
-# Junoにデプロイ
-juno deploy
-```
-
-詳細は[Junoドキュメント](https://juno.build/docs/add-juno-to-an-app/create-a-satellite)を参照してください。
-
-## 📁 プロジェクト構造
-
-```
-eat-review/
-├── src/
-│   ├── app/              # Next.js App Router
-│   ├── components/       # UIコンポーネント
-│   ├── services/         # データサービス層
-│   ├── types/           # TypeScript型定義
-│   ├── utils/           # ユーティリティ関数
-│   └── satellite/       # Rust Canister実装
-├── public/              # 静的ファイル
-├── juno.config.mjs      # Juno設定
-└── package.json
-```
-
-## 🧞 開発コマンド
-
-| コマンド | 説明 |
-|---------|------|
-| `pnpm dev` | 開発サーバー起動 |
-| `pnpm build` | プロダクションビルド |
-| `pnpm lint` | ESLintチェック |
-| `pnpm typecheck` | TypeScript型チェック |
-| `pnpm format` | Prettierフォーマット |
-| `juno deploy` | Junoにデプロイ |
-
-## 🤝 コントリビューション
-
-1. このリポジトリをフォーク
-2. 新しいブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-## 📄 ライセンス
-
-[MIT License](LICENSE)
-
-## 🔗 リンク
-
-- [Juno](https://juno.build)
-- [Internet Computer](https://internetcomputer.org)
-- [Next.js](https://nextjs.org)
+*最終更新: 2024年1月*
