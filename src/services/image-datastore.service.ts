@@ -53,10 +53,18 @@ export class ImageDatastoreService {
   
   static async deleteImage(key: string): Promise<void> {
     try {
-      await deleteDoc({
+      // Junoのdatastore APIではkeyで直接削除できる
+      const existingDoc = await getDoc({
         collection: 'images',
         key
       });
+      
+      if (existingDoc) {
+        await deleteDoc({
+          collection: 'images',
+          doc: existingDoc
+        });
+      }
     } catch (error) {
       console.error('Failed to delete image from datastore:', error);
     }

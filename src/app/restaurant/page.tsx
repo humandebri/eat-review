@@ -102,7 +102,7 @@ function RestaurantDetailContent() {
         serviceRating: newReview.serviceRating,
         valuePriceRating: newReview.valuePriceRating,
         cleanlinessRating: newReview.cleanlinessRating,
-        imageUrls: newReview.imageUrls
+        photoUrls: newReview.imageUrls
       });
       
       // 統計情報を更新

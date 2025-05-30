@@ -2,7 +2,7 @@ import { uploadFile, deleteAsset } from '@junobuild/core';
 
 export class StorageService {
   // 画像をアップロード
-  static async uploadImage(file: File, folder: string = 'images'): Promise<string> {
+  static async uploadImage(file: File): Promise<string> {
     try {
       // ファイル名を生成（タイムスタンプ + ランダム文字列）
       const timestamp = Date.now();
@@ -36,7 +36,7 @@ export class StorageService {
         
         // AgentErrorの場合の詳細
         if ('code' in error) {
-          console.error('Error code:', (error as any).code);
+          console.error('Error code:', (error as Record<string, unknown>).code);
         }
         if ('message' in error && error.message.includes('Storage')) {
           throw new Error(`ストレージエラー: ${error.message}`);
@@ -48,9 +48,9 @@ export class StorageService {
   }
 
   // 複数の画像をアップロード
-  static async uploadImages(files: File[], folder: string = 'images'): Promise<string[]> {
+  static async uploadImages(files: File[]): Promise<string[]> {
     try {
-      const uploadPromises = files.map(file => this.uploadImage(file, folder));
+      const uploadPromises = files.map(file => this.uploadImage(file));
       return await Promise.all(uploadPromises);
     } catch (error) {
       console.error('Failed to upload images:', error);

@@ -114,7 +114,7 @@ export class StatsService {
       }
       
       return JSON.parse(doc.data as string);
-    } catch (error) {
+    } catch {
       // コレクションが存在しない場合は無視
       console.warn('Restaurant stats collection not found, returning null');
       return null;
@@ -135,7 +135,7 @@ export class StatsService {
       }
       
       return JSON.parse(doc.data as string);
-    } catch (error) {
+    } catch {
       // コレクションが存在しない場合は無視
       console.warn('Daily stats collection not found, returning null');
       return null;
@@ -164,7 +164,7 @@ export class StatsService {
         .slice(0, limit);
       
       return stats;
-    } catch (error) {
+    } catch {
       // コレクションが存在しない場合は空配列を返す
       console.warn('Restaurant stats collection not found, returning empty array');
       return [];

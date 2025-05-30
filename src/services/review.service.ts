@@ -72,7 +72,7 @@ export class ReviewService {
         .sort((a: Review, b: Review) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-    } catch (error) {
+    } catch {
       console.warn('Reviews collection not found, returning empty array');
       return [];
     }
@@ -102,7 +102,7 @@ export class ReviewService {
         .sort((a: Review, b: Review) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-    } catch (error) {
+    } catch {
       console.warn('Reviews collection not found, returning empty array');
       return [];
     }

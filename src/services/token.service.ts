@@ -32,7 +32,8 @@ interface Account {
 }
 
 // IDL factory for the canister interface
-const idlFactory = ({ IDL }: any) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const idlFactory = ({ IDL }: { IDL: any }) => {
   const Account = IDL.Record({
     owner: IDL.Principal,
     subaccount: IDL.Opt(IDL.Vec(IDL.Nat8))
@@ -42,20 +43,20 @@ const idlFactory = ({ IDL }: any) => {
     name: IDL.Text,
     symbol: IDL.Text,
     decimals: IDL.Nat8,
-    total_supply: IDL.Nat64,
-    max_supply: IDL.Opt(IDL.Nat64),
-    mint_per_like: IDL.Nat64,
+    total_supply: IDL.Nat,
+    max_supply: IDL.Opt(IDL.Nat),
+    mint_per_like: IDL.Nat,
     canister_id: IDL.Principal
   });
 
   return IDL.Service({
-    icrc1_balance_of: IDL.Func([Account], [IDL.Nat64], ['query']),
+    icrc1_balance_of: IDL.Func([Account], [IDL.Nat], ['query']),
     like_review: IDL.Func([IDL.Text, IDL.Text], [IDL.Variant({
       Ok: IDL.Text,
       Err: IDL.Text
     })], []),
     has_user_liked_review: IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
-    get_review_likes: IDL.Func([IDL.Text], [IDL.Nat64], ['query']),
+    get_review_likes: IDL.Func([IDL.Text], [IDL.Nat], ['query']),
     get_token_config: IDL.Func([], [TokenConfig], ['query'])
   });
 };
@@ -152,7 +153,15 @@ export class TokenService {
   static async getTokenConfig(): Promise<TokenConfig | null> {
     try {
       const actor = await createActor();
-      const config = await actor.get_token_config() as any;
+      const config = await actor.get_token_config() as {
+        name: string;
+        symbol: string;
+        decimals: number;
+        total_supply: bigint;
+        max_supply?: bigint[];
+        mint_per_like: bigint;
+        canister_id: Principal;
+      };
       
       return {
         name: config.name,

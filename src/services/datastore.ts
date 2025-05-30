@@ -42,7 +42,7 @@ export class DatastoreService {
         ...JSON.parse(doc.data as string),
         id: doc.key
       };
-    } catch (error) {
+    } catch {
       console.warn('Restaurant collection not found or error occurred');
       return null;
     }
@@ -162,7 +162,7 @@ export class DatastoreService {
           id: doc.key
         }))
         .filter((review) => review.restaurantId === restaurantId);
-    } catch (error) {
+    } catch {
       console.warn('Reviews collection not found, returning empty array');
       return [];
     }
@@ -197,7 +197,7 @@ export class DatastoreService {
         ...JSON.parse(doc.data as string),
         id: doc.key
       };
-    } catch (error) {
+    } catch {
       console.warn('Review collection not found or error occurred');
       return null;
     }

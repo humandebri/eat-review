@@ -238,9 +238,9 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
       )}
       
       {/* レビュー画像 */}
-      {review.imageUrls && review.imageUrls.length > 0 && (
+      {review.photoUrls && review.photoUrls.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2">
-          {review.imageUrls.map((url, index) => (
+          {review.photoUrls.map((url, index) => (
             <img
               key={index}
               src={url}

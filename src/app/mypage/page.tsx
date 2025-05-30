@@ -7,8 +7,6 @@ import { useAuth } from '@/contexts/auth-context';
 import { UserStatsService, UserStats } from '@/services/user-stats.service';
 import { UserStatsDashboard } from '@/components/user-stats-dashboard';
 import { TokenService } from '@/services/token.service';
-import type { Review } from '@/types/review';
-import type { Restaurant } from '@/types/restaurant';
 
 export default function MyPage() {
   const router = useRouter();
@@ -25,28 +23,28 @@ export default function MyPage() {
     }
 
     if (user && isInitialized) {
+      const loadUserStats = async () => {
+        if (!user?.key) return;
+        
+        try {
+          setLoading(true);
+          const stats = await UserStatsService.getUserStats(user.key);
+          setUserStats(stats);
+          
+          // Canisterからトークン残高を取得
+          const balance = await TokenService.getBalance(user.key);
+          const formattedBalance = TokenService.formatTokenAmount(balance);
+          setTokenBalance(parseFloat(formattedBalance));
+        } catch (error) {
+          console.error('Failed to load user stats:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
       loadUserStats();
     }
   }, [authLoading, user, router, isInitialized]);
-
-  const loadUserStats = async () => {
-    if (!user?.key) return;
-    
-    try {
-      setLoading(true);
-      const stats = await UserStatsService.getUserStats(user.key);
-      setUserStats(stats);
-      
-      // Canisterからトークン残高を取得
-      const balance = await TokenService.getBalance(user.key);
-      const formattedBalance = TokenService.formatTokenAmount(balance);
-      setTokenBalance(parseFloat(formattedBalance));
-    } catch (error) {
-      console.error('Failed to load user stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   if (authLoading || !user) {
@@ -71,7 +69,7 @@ export default function MyPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">統計情報を読み込めませんでした</h1>
           <button
-            onClick={loadUserStats}
+            onClick={() => window.location.reload()}
             className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full hover:from-orange-600 hover:to-red-600"
           >
             再試行

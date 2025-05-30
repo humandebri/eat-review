@@ -34,7 +34,7 @@ export class ReputationService {
       }
       
       return JSON.parse(doc.data as string);
-    } catch (error) {
+    } catch {
       // コレクションが存在しない場合はデフォルト値を返す
       console.warn('User reputation collection not found, returning default values');
       return {
@@ -130,7 +130,7 @@ export class ReputationService {
         .slice(0, limit);
       
       return reputations;
-    } catch (error) {
+    } catch {
       console.warn('User reputation collection not found, returning empty array');
       return [];
     }

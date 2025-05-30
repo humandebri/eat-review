@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { RestaurantCard } from "@/components/restaurant-card";
-import { RestaurantForm } from "@/components/restaurant-form";
 import { DatastoreService } from "@/services/datastore";
 import { StatsService } from "@/services/stats.service";
 import { insertDemoData } from "@/utils/demo-data";
@@ -16,7 +15,7 @@ export default function Home() {
   const [restaurantStats, setRestaurantStats] = useState<Map<string, RestaurantStats>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて');
-  const { user } = useAuth();
+  const { } = useAuth();
 
   useEffect(() => {
     loadRestaurants();

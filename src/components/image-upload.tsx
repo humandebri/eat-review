@@ -57,7 +57,7 @@ export function ImageUpload({
       
       try {
         // まずStorageを試す
-        urls = await StorageService.uploadImages(validFiles, 'restaurant-images');
+        urls = await StorageService.uploadImages(validFiles);
       } catch (storageError) {
         console.warn('Storage upload failed, falling back to Datastore:', storageError);
         

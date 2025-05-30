@@ -1,5 +1,5 @@
 import { listDocs } from '@junobuild/core';
-import { Review, UserReputation } from '@/types/review';
+import { Review } from '@/types/review';
 import { ReputationService } from './reputation.service';
 
 export interface UserStats {
@@ -37,7 +37,7 @@ export class UserStatsService {
             ...JSON.parse(item.data as string),
           } as Review))
           .filter(review => review.authorId === userId);
-      } catch (reviewError) {
+      } catch {
         console.warn('Reviews collection not found, using empty array');
         userReviews = [];
       }
@@ -77,7 +77,7 @@ export class UserStatsService {
             }
           }
         }
-      } catch (error) {
+      } catch {
         console.warn('Restaurants collection not found, skipping category analysis');
       }
 

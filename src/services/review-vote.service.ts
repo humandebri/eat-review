@@ -86,7 +86,7 @@ export class ReviewVoteService {
         .find((vote: ReviewVote) => vote.reviewId === reviewId && vote.voterId === voterId);
       
       return vote || null;
-    } catch (error) {
+    } catch {
       console.warn('Review votes collection not found, returning null');
       return null;
     }
@@ -115,7 +115,7 @@ export class ReviewVoteService {
       const notHelpful = votes.filter((vote: ReviewVote) => vote.voteType === 'not_helpful').length;
       
       return { helpful, notHelpful };
-    } catch (error) {
+    } catch {
       console.warn('Review votes collection not found, returning zero counts');
       return { helpful: 0, notHelpful: 0 };
     }
@@ -142,7 +142,7 @@ export class ReviewVoteService {
           id: doc.key
         }))
         .filter((vote: ReviewVote) => vote.voterId === userId);
-    } catch (error) {
+    } catch {
       console.warn('Review votes collection not found, returning empty array');
       return [];
     }
