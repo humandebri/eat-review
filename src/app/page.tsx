@@ -15,16 +15,21 @@ export default function Home() {
   const [restaurantStats, setRestaurantStats] = useState<Map<string, RestaurantStats>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて');
-  const { } = useAuth();
+  const { isInitialized } = useAuth();
 
   useEffect(() => {
-    loadRestaurants();
-  }, []);
+    // Junoが初期化されてからレストランを読み込む
+    if (isInitialized) {
+      loadRestaurants();
+    }
+  }, [isInitialized]);
 
   const loadRestaurants = async () => {
     try {
       setLoading(true);
+      console.log('Loading restaurants...');
       const data = await DatastoreService.listRestaurants();
+      console.log('Restaurants loaded:', data.length);
       setRestaurants(data);
       
       // Load stats for each restaurant

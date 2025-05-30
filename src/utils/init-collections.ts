@@ -15,6 +15,7 @@ export async function initializeCollections() {
   // - user_reputation
   // - stats_restaurant_daily
   // - stats_restaurant_rolling
+  // - config (for storing API keys and other configuration)
   
   // NOTE: Storage (for images) is configured separately in Juno
   // You need to configure storage permissions in juno.dev console:

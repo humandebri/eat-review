@@ -96,7 +96,7 @@ function RestaurantDetailContent() {
         rating: newReview.rating,
         comment: newReview.comment.trim() || undefined,
         authorId: user.key,
-        authorName: `User-${user.key.substring(0, 8)}`, // principalIDの最初の8文字を使用
+        authorName: `User-${user.key}`, // 完全なprincipalIDを使用
         atmosphereRating: newReview.atmosphereRating,
         tasteRating: newReview.tasteRating,
         serviceRating: newReview.serviceRating,

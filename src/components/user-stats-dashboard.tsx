@@ -7,9 +7,10 @@ interface UserStatsDashboardProps {
   userStats: UserStats;
   userName: string;
   tokenBalance?: number;
+  principalId?: string;
 }
 
-export function UserStatsDashboard({ userStats, userName, tokenBalance = 0 }: UserStatsDashboardProps) {
+export function UserStatsDashboard({ userStats, userName, tokenBalance = 0, principalId }: UserStatsDashboardProps) {
   const trustLevelColors = {
     beginner: 'from-gray-100 to-gray-200 text-gray-700 dark:from-gray-800 dark:to-gray-700 dark:text-gray-300',
     experienced: 'from-blue-100 to-blue-200 text-blue-700 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-300',
@@ -29,11 +30,33 @@ export function UserStatsDashboard({ userStats, userName, tokenBalance = 0 }: Us
       {/* ユーザー情報ヘッダー */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{userName}</h1>
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-all">{userName}</h1>
             <p className="text-gray-600 dark:text-gray-400">レビュアープロフィール</p>
+            {principalId && (
+              <div className="mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Principal ID:</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-xs sm:text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded break-all">
+                    {principalId}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(principalId);
+                      alert('Principal IDをコピーしました');
+                    }}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    title="コピー"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div className={`px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r ${trustLevelColors[userStats.trustLevel]}`}>
+          <div className={`px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r ${trustLevelColors[userStats.trustLevel]} flex-shrink-0`}>
             {trustLevelLabels[userStats.trustLevel]}
           </div>
         </div>

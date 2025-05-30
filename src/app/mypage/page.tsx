@@ -79,7 +79,7 @@ export default function MyPage() {
     );
   }
 
-  const userName = `User-${user.key.substring(0, 8)}`;
+  const userName = `User-${user.key}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -135,7 +135,7 @@ export default function MyPage() {
       {/* メインコンテンツ */}
       <main className="py-8">
         {activeTab === 'dashboard' ? (
-          <UserStatsDashboard userStats={userStats} userName={userName} tokenBalance={tokenBalance} />
+          <UserStatsDashboard userStats={userStats} userName={userName} tokenBalance={tokenBalance} principalId={user.key} />
         ) : (
           <div className="max-w-4xl mx-auto p-6">
             <div className="bg-white rounded-2xl shadow-lg p-6">

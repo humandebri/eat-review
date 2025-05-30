@@ -25,6 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('Initializing Juno Satellite in AuthProvider...');
         await initSatellite({
+          satelliteId: process.env.NODE_ENV === 'development' 
+            ? 'be2us-64aaa-aaaaa-qaabq-cai'
+            : 's6ojm-liaaa-aaaal-asftq-cai',
           workers: {
             auth: true,
           },

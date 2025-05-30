@@ -160,7 +160,30 @@ Eat Reviewは、ブロックチェーン技術を活用して食文化の発展�
 - **スタイリング**: Tailwind CSS v4
 - **認証**: Internet Identity
 
-## 10. コミュニティとコントリビューション
+## 10. セットアップ方法
+
+### Google Maps API設定（ICP Canister用）
+
+1. **管理者権限の設定**
+   ```typescript
+   // src/app/admin/page.tsx の ADMIN_PRINCIPALS を編集
+   const ADMIN_PRINCIPALS = [
+     'your-principal-id-here', // あなたのプリンシパルIDに置き換える
+   ];
+   ```
+
+2. **Google Maps APIキーの取得**
+   - Google Cloud Consoleでプロジェクトを作成
+   - Maps Embed APIを有効化（地図表示用・無料）
+   - APIキーを作成し、HTTPリファラー制限を設定
+   - ※ Geocoding APIは課金が発生するため使用しません
+
+3. **APIキーの設定**
+   - `/admin` ページにアクセス（管理者権限が必要）
+   - APIキーを入力して保存
+   - Canister内に安全に保存されます
+
+## 11. コミュニティとコントリビューション
 
 プロジェクトはオープンソースであり、コミュニティからの貢献を歓迎します。
 

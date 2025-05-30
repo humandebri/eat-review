@@ -88,11 +88,20 @@ export class DatastoreService {
       
       return restaurantsWithStats;
     } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      
       // コレクションが存在しない場合は空配列を返す
-      if (error instanceof Error && error.message?.includes('not found')) {
-        return [];
+      if (error instanceof Error) {
+        if (error.message?.includes('not found') || 
+            error.message?.includes('collection') ||
+            error.message?.includes('satellite')) {
+          console.log('Collection not found or not ready, returning empty array');
+          return [];
+        }
       }
-      throw error;
+      
+      // その他のエラーは空配列を返す（エラーで画面が壊れないように）
+      return [];
     }
   }
 
