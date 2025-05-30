@@ -264,6 +264,68 @@ function RestaurantDetailContent() {
               </div>
             </div>
             
+            {/* レビュー画像ギャラリー */}
+            {(() => {
+              const reviewImages = reviews
+                .filter(review => review.photoUrls && review.photoUrls.length > 0)
+                .sort((a, b) => b.rating - a.rating)
+                .flatMap(review => 
+                  (review.photoUrls || []).map(url => ({ 
+                    url, 
+                    rating: review.rating,
+                    authorName: review.authorName,
+                    createdAt: review.createdAt
+                  }))
+                );
+              
+              if (reviewImages.length > 0) {
+                return (
+                  <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                      みんなの写真 ({reviewImages.length}枚)
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {reviewImages.slice(0, 8).map((image, index) => (
+                        <div
+                          key={index}
+                          className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity group"
+                          onClick={() => window.open(image.url, '_blank')}
+                        >
+                          <img
+                            src={image.url}
+                            alt={`${restaurant.name}の写真 ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute bottom-2 left-2 right-2 text-white text-xs">
+                              <div className="flex items-center gap-1 mb-1">
+                                <span className="text-yellow-400">★</span>
+                                <span>{image.rating.toFixed(1)}</span>
+                              </div>
+                              <p className="truncate">{image.authorName}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {reviewImages.length > 8 && (
+                        <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-gray-600">
+                              +{reviewImages.length - 8}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              枚の写真
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             {/* レビュー一覧 */}
             <div className="mt-8">
               <div className="flex justify-between items-center mb-6">

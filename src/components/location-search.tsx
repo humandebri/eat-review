@@ -4,7 +4,7 @@ interface LocationSearchProps {
   onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
 }
 
-export function LocationSearch({ onLocationSelect }: LocationSearchProps) {
+export function LocationSearch({ onLocationSelect: _onLocationSelect }: LocationSearchProps) {
 
   return (
     <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">

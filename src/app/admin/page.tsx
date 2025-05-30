@@ -31,7 +31,7 @@ export default function AdminPage() {
     if (user) {
       loadConfig();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, ADMIN_PRINCIPALS]);
 
   const loadConfig = async () => {
     try {

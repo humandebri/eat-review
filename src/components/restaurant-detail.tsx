@@ -1,13 +1,20 @@
 'use client';
 
 import { Restaurant } from '@/types/restaurant';
+import { Review } from '@/types/review';
 import { GoogleMap } from './google-map';
 
 interface RestaurantDetailProps {
   restaurant: Restaurant;
+  reviews?: Review[];
 }
 
-export function RestaurantDetail({ restaurant }: RestaurantDetailProps) {
+export function RestaurantDetail({ restaurant, reviews = [] }: RestaurantDetailProps) {
+  // レビューから画像を抽出（評価の高い順）
+  const reviewImages = reviews
+    .filter(review => review.photoUrls && review.photoUrls.length > 0)
+    .sort((a, b) => b.rating - a.rating)
+    .flatMap(review => review.photoUrls || []);
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
       {/* ヘッダー画像 */}
@@ -88,6 +95,42 @@ export function RestaurantDetail({ restaurant }: RestaurantDetailProps) {
           )}
         </div>
       </div>
+
+      {/* レビュー画像ギャラリー */}
+      {reviewImages.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            みんなの写真 ({reviewImages.length}枚)
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {reviewImages.slice(0, 8).map((imageUrl, index) => (
+              <div
+                key={index}
+                className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => window.open(imageUrl, '_blank')}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${restaurant.name}の写真 ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+            {reviewImages.length > 8 && (
+              <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+                    +{reviewImages.length - 8}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    枚の写真
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 地図 */}
       {(restaurant.location || restaurant.address) && (
