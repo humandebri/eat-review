@@ -18,17 +18,23 @@ export default function AdminPage() {
   ];
 
   useEffect(() => {
+    console.log('Admin page - Current user:', user?.key);
+    console.log('Admin page - Admin principals:', ADMIN_PRINCIPALS);
+    
     if (!loading && !user) {
+      console.log('Admin page - No user, redirecting to home');
       router.push('/');
       return;
     }
 
     if (user && !ADMIN_PRINCIPALS.includes(user.key)) {
+      console.log('Admin page - User is not admin, redirecting to home');
       router.push('/');
       return;
     }
 
     if (user) {
+      console.log('Admin page - User is admin, loading config');
       loadConfig();
     }
   }, [user, loading, router, ADMIN_PRINCIPALS]);

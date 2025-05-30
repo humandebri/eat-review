@@ -14,6 +14,7 @@ import { StarRating } from '@/components/star-rating';
 import { GoogleMap } from '@/components/google-map';
 import { useAuth } from '@/contexts/auth-context';
 import { ImageUpload } from '@/components/image-upload';
+import { UserService } from '@/services/user.service';
 
 function RestaurantDetailContent() {
   const searchParams = useSearchParams();
@@ -26,6 +27,8 @@ function RestaurantDetailContent() {
   const [stats, setStats] = useState<RestaurantStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showAddPhotos, setShowAddPhotos] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 0,
     comment: '',
@@ -91,12 +94,15 @@ function RestaurantDetailContent() {
     }
     
     try {
+      // ユーザーの表示名を取得
+      const displayName = await UserService.getDisplayName(user.key);
+      
       await ReviewService.createReview({
         restaurantId,
         rating: newReview.rating,
         comment: newReview.comment.trim() || undefined,
         authorId: user.key,
-        authorName: `User-${user.key}`, // 完全なprincipalIDを使用
+        authorName: displayName,
         atmosphereRating: newReview.atmosphereRating,
         tasteRating: newReview.tasteRating,
         serviceRating: newReview.serviceRating,
@@ -128,6 +134,34 @@ function RestaurantDetailContent() {
     } catch (error) {
       console.error('Failed to submit review:', error);
       alert('レビューの投稿に失敗しました');
+    }
+  };
+  
+  const handleAddPhotos = async (imageUrls: string[]) => {
+    if (!restaurantId || !restaurant) return;
+    
+    try {
+      setUploadingPhotos(true);
+      
+      // 既存の画像URLと新しい画像URLを結合
+      const updatedImageUrls = [...(restaurant.imageUrls || []), ...imageUrls];
+      
+      // レストラン情報を更新
+      await DatastoreService.updateRestaurant(restaurantId, {
+        ...restaurant,
+        imageUrls: updatedImageUrls
+      });
+      
+      // データを再読み込み
+      await loadRestaurantData();
+      
+      setShowAddPhotos(false);
+      alert('写真を追加しました！');
+    } catch (error) {
+      console.error('Failed to add photos:', error);
+      alert('写真の追加に失敗しました');
+    } finally {
+      setUploadingPhotos(false);
     }
   };
   
@@ -180,13 +214,27 @@ function RestaurantDetailContent() {
           {/* レストラン情報 */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              {restaurant.imageUrl && (
+              {/* レストランの画像表示 */}
+              {(restaurant.imageUrls && restaurant.imageUrls.length > 0) ? (
+                <div className="relative">
+                  <img
+                    src={restaurant.imageUrls[0]}
+                    alt={restaurant.name}
+                    className="w-full h-64 object-cover"
+                  />
+                  {restaurant.imageUrls.length > 1 && (
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                      +{restaurant.imageUrls.length - 1} 枚の写真
+                    </div>
+                  )}
+                </div>
+              ) : restaurant.imageUrl ? (
                 <img
                   src={restaurant.imageUrl}
                   alt={restaurant.name}
                   className="w-full h-64 object-cover"
                 />
-              )}
+              ) : null}
               
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -213,6 +261,20 @@ function RestaurantDetailContent() {
                   <p className="text-gray-700 mb-6">{restaurant.description}</p>
                 )}
                 
+                {/* オーナー用の写真追加ボタン */}
+                {user && restaurant.owner === user.key && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowAddPhotos(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      写真を追加
+                    </button>
+                  </div>
+                )}
                 
                 {/* 追加者情報 */}
                 {restaurant.owner && (
@@ -263,6 +325,30 @@ function RestaurantDetailContent() {
                 </div>
               </div>
             </div>
+            
+            {/* レストラン写真ギャラリー */}
+            {restaurant.imageUrls && restaurant.imageUrls.length > 0 && (
+              <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  レストランの写真 ({restaurant.imageUrls.length}枚)
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {restaurant.imageUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(url, '_blank')}
+                    >
+                      <img
+                        src={url}
+                        alt={`${restaurant.name}の写真 ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* レビュー画像ギャラリー */}
             {(() => {
@@ -675,6 +761,52 @@ function RestaurantDetailContent() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* 写真追加フォーム（モーダル） */}
+      {showAddPhotos && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowAddPhotos(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">レストランの写真を追加</h2>
+              <button
+                onClick={() => setShowAddPhotos(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                レストランの外観、内装、料理などの写真を追加できます
+              </p>
+              <ImageUpload
+                label="写真を選択"
+                maxImages={5}
+                onImagesUploaded={handleAddPhotos}
+              />
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowAddPhotos(false)}
+                disabled={uploadingPhotos}
+                className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+            </div>
           </div>
         </div>
       )}

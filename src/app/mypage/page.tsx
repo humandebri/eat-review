@@ -7,14 +7,19 @@ import { useAuth } from '@/contexts/auth-context';
 import { UserStatsService, UserStats } from '@/services/user-stats.service';
 import { UserStatsDashboard } from '@/components/user-stats-dashboard';
 import { TokenService } from '@/services/token.service';
+import { UserService } from '@/services/user.service';
 
 export default function MyPage() {
   const router = useRouter();
   const { user, loading: authLoading, isInitialized } = useAuth();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reviews'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reviews' | 'settings'>('dashboard');
   const [tokenBalance, setTokenBalance] = useState<number>(0);
+  const [displayName, setDisplayName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -23,11 +28,21 @@ export default function MyPage() {
     }
 
     if (user && isInitialized) {
-      const loadUserStats = async () => {
+      const loadUserData = async () => {
         if (!user?.key) return;
         
         try {
           setLoading(true);
+          
+          // ユーザープロフィールを取得
+          const profile = await UserService.getUserProfile(user.key);
+          if (profile) {
+            setDisplayName(profile.displayName);
+          } else {
+            setDisplayName(`User-${user.key.substring(0, 8)}`);
+          }
+          
+          // 統計情報を取得
           const stats = await UserStatsService.getUserStats(user.key);
           setUserStats(stats);
           
@@ -36,15 +51,42 @@ export default function MyPage() {
           const formattedBalance = TokenService.formatTokenAmount(balance);
           setTokenBalance(parseFloat(formattedBalance));
         } catch (error) {
-          console.error('Failed to load user stats:', error);
+          console.error('Failed to load user data:', error);
         } finally {
           setLoading(false);
         }
       };
       
-      loadUserStats();
+      loadUserData();
     }
   }, [authLoading, user, router, isInitialized]);
+
+  const handleSaveDisplayName = async () => {
+    if (!user || !newDisplayName.trim()) return;
+    
+    try {
+      setSavingName(true);
+      
+      // 表示名が既に使用されているかチェック
+      const isTaken = await UserService.isDisplayNameTaken(newDisplayName, user.key);
+      if (isTaken) {
+        alert('この名前は既に使用されています');
+        return;
+      }
+      
+      // プロフィールを更新
+      await UserService.updateUserProfile(user.key, newDisplayName);
+      setDisplayName(newDisplayName);
+      setIsEditingName(false);
+      UserService.clearCache(user.key);
+      alert('ユーザー名を更新しました');
+    } catch (error) {
+      console.error('Failed to save display name:', error);
+      alert('ユーザー名の更新に失敗しました');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
 
   if (authLoading || !user) {
@@ -79,7 +121,7 @@ export default function MyPage() {
     );
   }
 
-  const userName = `User-${user.key}`;
+  const userName = displayName || `User-${user.key}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -128,6 +170,16 @@ export default function MyPage() {
             >
               レビュー履歴
             </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'settings'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              設定
+            </button>
           </div>
         </div>
       </div>
@@ -136,7 +188,7 @@ export default function MyPage() {
       <main className="py-8">
         {activeTab === 'dashboard' ? (
           <UserStatsDashboard userStats={userStats} userName={userName} tokenBalance={tokenBalance} principalId={user.key} />
-        ) : (
+        ) : activeTab === 'reviews' ? (
           <div className="max-w-4xl mx-auto p-6">
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -186,6 +238,86 @@ export default function MyPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">設定</h2>
+              
+              <div className="space-y-6">
+                {/* ユーザー名設定 */}
+                <div className="border-b pb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">ユーザー名</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      {isEditingName ? (
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="text"
+                            value={newDisplayName}
+                            onChange={(e) => setNewDisplayName(e.target.value)}
+                            placeholder="新しいユーザー名を入力"
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            maxLength={50}
+                          />
+                          <button
+                            onClick={handleSaveDisplayName}
+                            disabled={savingName || !newDisplayName.trim()}
+                            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {savingName ? '保存中...' : '保存'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsEditingName(false);
+                              setNewDisplayName('');
+                            }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">{displayName}</p>
+                            <p className="text-sm text-gray-500">このユーザー名がレビューに表示されます</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setIsEditingName(true);
+                              setNewDisplayName(displayName);
+                            }}
+                            className="px-4 py-2 text-orange-600 hover:text-orange-700 font-medium"
+                          >
+                            編集
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* アカウント情報 */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">アカウント情報</h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Principal ID</p>
+                        <p className="text-sm font-mono text-gray-900 break-all">{user.key}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">総レビュー数</p>
+                        <p className="text-sm text-gray-900">
+                          {userStats?.totalReviews || 0} 件
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

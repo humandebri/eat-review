@@ -11,6 +11,7 @@ export interface Restaurant {
   businessHours: string;
   description?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   website?: string;
   averageRating?: number;
   reviewCount?: number;
