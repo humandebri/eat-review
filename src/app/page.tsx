@@ -1,61 +1,105 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { initSatellite } from "@junobuild/core";
 import { RestaurantCard } from "@/components/restaurant-card";
-import { RestaurantForm } from "@/components/restaurant-form";
+import { ReviewItem } from "@/components/review-item";
 import { DatastoreService } from "@/services/datastore";
 import { StatsService } from "@/services/stats.service";
-import { insertDemoData } from "@/utils/demo-data";
+import { ReviewService } from "@/services/review.service";
 import { useAuth } from "@/contexts/auth-context";
 import { categoryMapping, mainCategories } from "@/utils/category-mapping";
 import type { Restaurant, RestaurantCategory } from "@/types/restaurant";
-import type { RestaurantStats } from "@/types/review";
+import type { RestaurantStats, Review } from "@/types/review";
+import { nanoid } from 'nanoid';
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [restaurantStats, setRestaurantStats] = useState<Map<string, RestaurantStats>>(new Map());
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて');
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
+  
+  // 仮のユーザーID（認証実装後に変更）
+  const currentUserId = 'temp-user-' + (typeof window !== 'undefined' ? localStorage.getItem('userId') || nanoid() : '');
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    (async () => {
-      await initSatellite({
-        workers: {
-          auth: true,
-        },
-      });
+    if (typeof window !== 'undefined' && !localStorage.getItem('userId')) {
+      localStorage.setItem('userId', currentUserId);
+    }
+    // Juno初期化後にデータを読み込む
+    if (isInitialized) {
       loadRestaurants();
-    })();
-  }, []);
+    }
+  }, [currentUserId, isInitialized]);
 
   const loadRestaurants = async () => {
     try {
       setLoading(true);
-      const data = await DatastoreService.listRestaurants();
-      setRestaurants(data);
+      const [restaurantData, reviewsData] = await Promise.all([
+        DatastoreService.listRestaurants(),
+        loadRecentReviews()
+      ]);
       
-      // Load stats for each restaurant
+      // Load stats for each restaurant and calculate if missing
       const statsMap = new Map<string, RestaurantStats>();
-      await Promise.all(
-        data.map(async (restaurant) => {
+      const updatedRestaurants = await Promise.all(
+        restaurantData.map(async (restaurant) => {
           if (restaurant.id) {
-            const stats = await StatsService.getRestaurantStats(restaurant.id);
+            let stats = await StatsService.getRestaurantStats(restaurant.id);
+            
+            // If no stats exist, calculate them now
+            if (!stats) {
+              stats = await StatsService.calculateRollingStats(restaurant.id);
+            }
+            
             if (stats) {
               statsMap.set(restaurant.id, stats);
+              // Update restaurant with current review count
+              return {
+                ...restaurant,
+                reviewCount: stats.totalReviews,
+                averageRating: stats.weightedAverageRating
+              };
             }
           }
+          return restaurant;
         })
       );
+      
+      setRestaurants(updatedRestaurants);
       setRestaurantStats(statsMap);
+      setRecentReviews(reviewsData);
     } catch (error) {
       console.error('Failed to load restaurants:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const loadRecentReviews = async (): Promise<Review[]> => {
+    try {
+      // 全レストランの最新レビューを取得
+      const allReviews: Review[] = [];
+      const restaurants = await DatastoreService.listRestaurants();
+      
+      for (const restaurant of restaurants) {
+        if (restaurant.id) {
+          const reviews = await ReviewService.getRestaurantReviews(restaurant.id);
+          allReviews.push(...reviews);
+        }
+      }
+      
+      // 作成日時でソートして最新5件を返す
+      return allReviews
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+    } catch (error) {
+      console.error('Failed to load recent reviews:', error);
+      return [];
+    }
+  };
+
 
 
 
@@ -74,6 +118,7 @@ export default function Home() {
             お気に入りのレストランを発見し、素晴らしい食体験をコミュニティと共有しましょう
           </p>
         </div>
+
 
 
 
@@ -176,30 +221,77 @@ export default function Home() {
               </div>
             </div>
 
-            {/* レストラングリッド */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-              {restaurants
-                .filter(restaurant => {
-                  if (selectedCategory === 'すべて') return true;
-                  // カテゴリーマッピングを使用してフィルター
-                  const mappedCategory = categoryMapping[restaurant.category as RestaurantCategory];
-                  return mappedCategory === selectedCategory;
-                })
-                .map((restaurant) => {
-                  if (!restaurant.id) return null;
-                  const stats = restaurantStats.get(restaurant.id);
-                  return (
-                    <RestaurantCard
-                      key={restaurant.id}
-                      restaurant={restaurant}
-                      averageRating90d={stats?.averageRating90d}
-                      onClick={() => {
-                        window.location.href = `/restaurant?id=${restaurant.id}`;
-                      }}
-                    />
-                  );
-                })
-                .filter(Boolean)}
+            {/* 2カラムレイアウト */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* レストラングリッド */}
+              <div className="xl:col-span-2">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">レストラン一覧</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {restaurants
+                    .filter(restaurant => {
+                      if (selectedCategory === 'すべて') return true;
+                      // カテゴリーマッピングを使用してフィルター
+                      const mappedCategory = categoryMapping[restaurant.category as RestaurantCategory];
+                      return mappedCategory === selectedCategory;
+                    })
+                    .map((restaurant) => {
+                      if (!restaurant.id) return null;
+                      const stats = restaurantStats.get(restaurant.id);
+                      return (
+                        <RestaurantCard
+                          key={restaurant.id}
+                          restaurant={restaurant}
+                          averageRating90d={stats?.averageRating90d}
+                          onClick={() => {
+                            window.location.href = `/restaurant?id=${restaurant.id}`;
+                          }}
+                        />
+                      );
+                    })
+                    .filter(Boolean)}
+                </div>
+              </div>
+
+              {/* 最近のレビューサイドバー */}
+              <div className="xl:col-span-1">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-4">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">最近のレビュー</h2>
+                  
+                  {recentReviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-3 opacity-60">📝</div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        まだレビューがありません
+                      </p>
+                      <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
+                        レストランにレビューを投稿してみましょう
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentReviews.map((review) => (
+                        <ReviewItem
+                          key={review.id}
+                          review={review}
+                          currentUserId={currentUserId}
+                          onVote={async () => {
+                            // レビュー投票後の処理
+                            await loadRecentReviews();
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  
+                  {recentReviews.length > 0 && (
+                    <div className="mt-6 text-center">
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        最新の {recentReviews.length} 件のレビューを表示
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             {/* フィルター結果が0件の場合 */}

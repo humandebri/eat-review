@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Review } from '@/types/review';
 import { ReviewVoteService } from '@/services/review-vote.service';
 import { ReputationService } from '@/services/reputation.service';
+import { TokenService } from '@/services/token.service';
 import { StarRating } from './star-rating';
 
 interface ReviewItemProps {
@@ -17,9 +18,12 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
   const [userVote, setUserVote] = useState<'helpful' | 'not_helpful' | null>(null);
   const [authorReputation, setAuthorReputation] = useState<number>(1.0);
   const [loading, setLoading] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
   
   useEffect(() => {
     loadVotesAndReputation();
+    loadLikeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [review.id, currentUserId]);
   
@@ -43,6 +47,18 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
     }
   };
   
+  const loadLikeData = async () => {
+    try {
+      // Canisterから現在のいいね数とユーザーの状態を取得
+      const likeCount = await TokenService.getReviewLikes(review.id);
+      const hasUserLiked = await TokenService.hasUserLikedReview(review.id, currentUserId);
+      setLikeCount(likeCount);
+      setHasLiked(hasUserLiked);
+    } catch (error) {
+      console.error('Failed to load like data:', error);
+    }
+  };
+
   const handleVote = async (voteType: 'helpful' | 'not_helpful') => {
     if (loading) return;
     
@@ -75,6 +91,33 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
       onVote();
     } catch (error) {
       console.error('Failed to vote:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (loading || hasLiked) return;
+    
+    setLoading(true);
+    try {
+      // Canisterのlike_review関数を呼び出し
+      const result = await TokenService.likeReview(review.id, currentUserId);
+      
+      if (result.success) {
+        // ローカル状態を更新
+        setHasLiked(true);
+        setLikeCount(prev => prev + 1);
+        onVote();
+      } else {
+        console.error('Failed to like review:', result.message);
+        // 既にいいねしている場合のエラーハンドリング
+        if (result.message.includes('Already liked')) {
+          setHasLiked(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to like review:', error);
     } finally {
       setLoading(false);
     }
@@ -194,6 +237,21 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
         </div>
       )}
       
+      {/* レビュー画像 */}
+      {review.imageUrls && review.imageUrls.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {review.imageUrls.map((url, index) => (
+            <img
+              key={index}
+              src={url}
+              alt={`レビュー画像 ${index + 1}`}
+              className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => window.open(url, '_blank')}
+            />
+          ))}
+        </div>
+      )}
+      
       <div className="flex items-center gap-4 text-sm">
         <button
           onClick={() => handleVote('helpful')}
@@ -222,6 +280,20 @@ export function ReviewItem({ review, currentUserId, onVote }: ReviewItemProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
           </svg>
           役に立たなかった ({votes.notHelpful})
+        </button>
+        <button
+          onClick={handleLike}
+          disabled={loading || hasLiked}
+          className={`flex items-center gap-1 transition-colors ${
+            hasLiked
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400'
+          } disabled:opacity-50`}
+        >
+          <svg className="w-4 h-4" fill={hasLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+          いいね ({likeCount})
         </button>
       </div>
     </div>

@@ -10,13 +10,21 @@ import { insertDemoData } from '@/utils/demo-data';
 import type { Restaurant } from '@/types/restaurant';
 
 export function GlobalNavbar() {
-  const { user } = useAuth();
+  const { user, loading, isInitialized } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [showLoginMessage, setShowLoginMessage] = useState(false);
 
+  // デバッグ用ログ
+  console.log('GlobalNavbar - Auth state:', { user, loading, isInitialized });
+
   const handleCreateRestaurant = async (restaurant: Omit<Restaurant, 'id'>) => {
     try {
-      await DatastoreService.createRestaurant(restaurant);
+      // ownerフィールドを追加
+      const restaurantWithOwner = {
+        ...restaurant,
+        owner: user?.key || 'anonymous'
+      };
+      await DatastoreService.createRestaurant(restaurantWithOwner);
       setShowForm(false);
       // ページリロードして最新データを表示
       window.location.reload();
@@ -49,6 +57,26 @@ export function GlobalNavbar() {
     }
   };
 
+  // Juno初期化が完了するまでローディング状態のNavbarを表示
+  if (!isInitialized) {
+    return (
+      <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                Eat Review
+              </h1>
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <>
       <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
@@ -63,7 +91,14 @@ export function GlobalNavbar() {
             
             {/* ナビゲーションメニュー */}
             <div className="flex items-center gap-2">
-              {user ? (
+              {loading ? (
+                <>
+                  {/* 認証読み込み中 */}
+                  <div className="animate-pulse">
+                    <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                  </div>
+                </>
+              ) : user ? (
                 <>
                   {/* レストラン追加ボタン */}
                   <button
@@ -77,17 +112,7 @@ export function GlobalNavbar() {
                     <span className="sm:hidden">追加</span>
                   </button>
                   
-                  {/* 3Pボタン（将来の機能用） */}
-                  <button
-                    className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50"
-                    disabled
-                    title="Coming Soon"
-                  >
-                    <span className="hidden sm:inline">3P</span>
-                    <span className="sm:hidden">3P</span>
-                  </button>
-                  
-                  {/* マイページリンク */}
+                  {/* マイページボタン */}
                   <Link
                     href="/mypage"
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -99,15 +124,14 @@ export function GlobalNavbar() {
                   </Link>
                   
                   {/* ログアウトボタン */}
-                  <LoginButton />
+                  <LoginButton junoReady={isInitialized} />
                 </>
               ) : (
                 <>
                   {/* 未ログイン時 */}
                   <button
                     onClick={handleAddRestaurant}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50"
-                    disabled
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -115,7 +139,7 @@ export function GlobalNavbar() {
                     <span className="hidden sm:inline">レストランを追加</span>
                     <span className="sm:hidden">追加</span>
                   </button>
-                  <LoginButton />
+                  <LoginButton junoReady={isInitialized} />
                 </>
               )}
               

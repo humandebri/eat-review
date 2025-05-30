@@ -6,9 +6,10 @@ import { StarRating } from './star-rating';
 interface UserStatsDashboardProps {
   userStats: UserStats;
   userName: string;
+  tokenBalance?: number;
 }
 
-export function UserStatsDashboard({ userStats, userName }: UserStatsDashboardProps) {
+export function UserStatsDashboard({ userStats, userName, tokenBalance = 0 }: UserStatsDashboardProps) {
   const trustLevelColors = {
     beginner: 'from-gray-100 to-gray-200 text-gray-700 dark:from-gray-800 dark:to-gray-700 dark:text-gray-300',
     experienced: 'from-blue-100 to-blue-200 text-blue-700 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-300',
@@ -73,7 +74,7 @@ export function UserStatsDashboard({ userStats, userName }: UserStatsDashboardPr
       </div>
 
       {/* 統計カード */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* 総レビュー数 */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between">
@@ -112,6 +113,20 @@ export function UserStatsDashboard({ userStats, userName }: UserStatsDashboardPr
               </p>
             </div>
             <div className="text-4xl">👍</div>
+          </div>
+        </div>
+
+        {/* ERTトークン残高 */}
+        <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-100">ERTトークン</p>
+              <p className="text-3xl font-bold">{tokenBalance.toFixed(2)}</p>
+              <p className="text-xs text-purple-200 mt-1">
+                レビューにいいねされると獲得
+              </p>
+            </div>
+            <div className="text-4xl">🪙</div>
           </div>
         </div>
       </div>

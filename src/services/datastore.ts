@@ -30,17 +30,22 @@ export class DatastoreService {
   }
 
   static async getRestaurant(id: string): Promise<Restaurant | null> {
-    const doc = await getDoc({
-      collection: RESTAURANT_COLLECTION,
-      key: id
-    });
-    
-    if (!doc) return null;
-    
-    return {
-      ...JSON.parse(doc.data as string),
-      id: doc.key
-    };
+    try {
+      const doc = await getDoc({
+        collection: RESTAURANT_COLLECTION,
+        key: id
+      });
+      
+      if (!doc) return null;
+      
+      return {
+        ...JSON.parse(doc.data as string),
+        id: doc.key
+      };
+    } catch (error) {
+      console.warn('Restaurant collection not found or error occurred');
+      return null;
+    }
   }
 
   static async listRestaurants(): Promise<Restaurant[]> {
@@ -136,26 +141,31 @@ export class DatastoreService {
   }
 
   static async getReviewsByRestaurant(restaurantId: string): Promise<Review[]> {
-    const result = await listDocs({
-      collection: REVIEW_COLLECTION,
-      filter: {
-        order: {
-          desc: true,
-          field: 'created_at'
+    try {
+      const result = await listDocs({
+        collection: REVIEW_COLLECTION,
+        filter: {
+          order: {
+            desc: true,
+            field: 'created_at'
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return [];
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      return result.items
+        .map((doc) => ({
+          ...JSON.parse(doc.data as string),
+          id: doc.key
+        }))
+        .filter((review) => review.restaurantId === restaurantId);
+    } catch (error) {
+      console.warn('Reviews collection not found, returning empty array');
       return [];
     }
-    
-    return result.items
-      .map((doc) => ({
-        ...JSON.parse(doc.data as string),
-        id: doc.key
-      }))
-      .filter((review) => review.restaurantId === restaurantId);
   }
 
   static async deleteReview(id: string): Promise<void> {
@@ -175,17 +185,22 @@ export class DatastoreService {
   }
 
   private static async getReview(id: string): Promise<Review | null> {
-    const doc = await getDoc({
-      collection: REVIEW_COLLECTION,
-      key: id
-    });
-    
-    if (!doc) return null;
-    
-    return {
-      ...JSON.parse(doc.data as string),
-      id: doc.key
-    };
+    try {
+      const doc = await getDoc({
+        collection: REVIEW_COLLECTION,
+        key: id
+      });
+      
+      if (!doc) return null;
+      
+      return {
+        ...JSON.parse(doc.data as string),
+        id: doc.key
+      };
+    } catch (error) {
+      console.warn('Review collection not found or error occurred');
+      return null;
+    }
   }
 
   private static async updateRestaurantRating(restaurantId: string): Promise<void> {

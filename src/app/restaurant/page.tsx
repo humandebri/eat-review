@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { initSatellite } from '@junobuild/core';
 import { Restaurant } from '@/types/restaurant';
 import { Review } from '@/types/review';
 import { RestaurantStats } from '@/types/review';
@@ -14,11 +13,12 @@ import { ReviewItem } from '@/components/review-item';
 import { StarRating } from '@/components/star-rating';
 import { GoogleMap } from '@/components/google-map';
 import { useAuth } from '@/contexts/auth-context';
+import { ImageUpload } from '@/components/image-upload';
 
 function RestaurantDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const restaurantId = searchParams.get('id');
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -33,29 +33,23 @@ function RestaurantDetailContent() {
     tasteRating: undefined as number | undefined,
     serviceRating: undefined as number | undefined,
     valuePriceRating: undefined as number | undefined,
-    cleanlinessRating: undefined as number | undefined
+    cleanlinessRating: undefined as number | undefined,
+    imageUrls: [] as string[]
   });
   
   
   useEffect(() => {
-    // Juno Satelliteを初期化
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    (async () => {
-      await initSatellite({
-        workers: {
-          auth: true,
-        },
-      });
-      
-      if (!restaurantId) {
-        router.push('/');
-        return;
-      }
-      
+    if (!restaurantId) {
+      router.push('/');
+      return;
+    }
+    
+    // Juno初期化後にデータを読み込む
+    if (isInitialized) {
       loadRestaurantData();
-    })();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId]);
+  }, [restaurantId, isInitialized]);
   
   const loadRestaurantData = async () => {
     if (!restaurantId) return;
@@ -107,7 +101,8 @@ function RestaurantDetailContent() {
         tasteRating: newReview.tasteRating,
         serviceRating: newReview.serviceRating,
         valuePriceRating: newReview.valuePriceRating,
-        cleanlinessRating: newReview.cleanlinessRating
+        cleanlinessRating: newReview.cleanlinessRating,
+        imageUrls: newReview.imageUrls
       });
       
       // 統計情報を更新
@@ -124,7 +119,8 @@ function RestaurantDetailContent() {
         tasteRating: undefined,
         serviceRating: undefined,
         valuePriceRating: undefined,
-        cleanlinessRating: undefined
+        cleanlinessRating: undefined,
+        imageUrls: []
       });
       setShowReviewForm(false);
       
@@ -165,9 +161,21 @@ function RestaurantDetailContent() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
+      {/* 戻るボタン */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          戻る
+        </button>
+      </div>
 
       {/* メインコンテンツ */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* レストラン情報 */}
           <div className="lg:col-span-2">
@@ -205,6 +213,35 @@ function RestaurantDetailContent() {
                   <p className="text-gray-700 mb-6">{restaurant.description}</p>
                 )}
                 
+                
+                {/* 追加者情報 */}
+                {restaurant.owner && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">
+                          追加者: <span className="font-mono">{restaurant.owner.slice(0, 8)}...{restaurant.owner.slice(-4)}</span>
+                        </span>
+                      </div>
+                      {user && user.key !== restaurant.owner && (
+                        <button
+                          onClick={() => {
+                            if (confirm('このレストランが重複している場合、報告しますか？')) {
+                              // TODO: 重複報告機能を実装
+                              alert('報告機能は現在開発中です');
+                            }
+                          }}
+                          className="text-xs text-red-600 hover:text-red-700 hover:underline"
+                        >
+                          重複を報告
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {restaurant.phoneNumber && (
@@ -546,6 +583,17 @@ function RestaurantDetailContent() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   rows={3}
                   placeholder="料理の感想、雰囲気、サービスなどについて教えてください"
+                />
+              </div>
+              
+              {/* 画像アップロード */}
+              <div className="mb-4">
+                <ImageUpload
+                  label="レビュー画像（任意）"
+                  maxImages={3}
+                  onImagesUploaded={(urls) => {
+                    setNewReview(prev => ({ ...prev, imageUrls: urls }));
+                  }}
                 />
               </div>
               

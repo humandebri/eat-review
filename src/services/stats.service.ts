@@ -116,10 +116,7 @@ export class StatsService {
       return JSON.parse(doc.data as string);
     } catch (error) {
       // コレクションが存在しない場合は無視
-      if (error instanceof Error && error.message.includes('not found')) {
-        return null;
-      }
-      console.error('Failed to get restaurant stats:', error);
+      console.warn('Restaurant stats collection not found, returning null');
       return null;
     }
   }
@@ -140,10 +137,7 @@ export class StatsService {
       return JSON.parse(doc.data as string);
     } catch (error) {
       // コレクションが存在しない場合は無視
-      if (error instanceof Error && error.message.includes('not found')) {
-        return null;
-      }
-      console.error('Failed to get daily stats:', error);
+      console.warn('Daily stats collection not found, returning null');
       return null;
     }
   }
@@ -172,10 +166,7 @@ export class StatsService {
       return stats;
     } catch (error) {
       // コレクションが存在しない場合は空配列を返す
-      if (error instanceof Error && error.message.includes('not found')) {
-        return [];
-      }
-      console.error('Failed to get top rated restaurants:', error);
+      console.warn('Restaurant stats collection not found, returning empty array');
       return [];
     }
   }

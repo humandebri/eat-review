@@ -35,8 +35,15 @@ export class ReputationService {
       
       return JSON.parse(doc.data as string);
     } catch (error) {
-      console.error('Failed to get user reputation:', error);
-      return null;
+      // コレクションが存在しない場合はデフォルト値を返す
+      console.warn('User reputation collection not found, returning default values');
+      return {
+        userId,
+        totalHelpfulVotes: 0,
+        totalNotHelpfulVotes: 0,
+        reputationScore: 1.0,
+        lastUpdated: new Date()
+      };
     }
   }
   
@@ -103,24 +110,29 @@ export class ReputationService {
   }
   
   static async getTopContributors(limit: number = 10): Promise<UserReputation[]> {
-    const result = await listDocs({
-      collection: USER_REPUTATION_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 1000
+    try {
+      const result = await listDocs({
+        collection: USER_REPUTATION_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 1000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return [];
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      const reputations = result.items
+        .map((doc) => JSON.parse(doc.data as string))
+        .sort((a: UserReputation, b: UserReputation) => b.reputationScore - a.reputationScore)
+        .slice(0, limit);
+      
+      return reputations;
+    } catch (error) {
+      console.warn('User reputation collection not found, returning empty array');
       return [];
     }
-    
-    const reputations = result.items
-      .map((doc) => JSON.parse(doc.data as string))
-      .sort((a: UserReputation, b: UserReputation) => b.reputationScore - a.reputationScore)
-      .slice(0, limit);
-    
-    return reputations;
   }
 }

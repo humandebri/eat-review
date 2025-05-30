@@ -6,7 +6,7 @@ export default defineConfig({
   satellite: {
     ids: {
       development: "be2us-64aaa-aaaaa-qaabq-cai",
-      production: '<PROD_SATELLITE_ID>'
+      production: 's6ojm-liaaa-aaaal-asftq-cai'
     },
     source: "out",
     predeploy: ["npm run build"],

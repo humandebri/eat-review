@@ -1,0 +1,51 @@
+name: Deploy to Juno
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Debug - Check files
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Checking for pnpm-lock.yaml:"
+          if [ -f pnpm-lock.yaml ]; then
+            echo "✅ pnpm-lock.yaml found"
+            ls -la pnpm-lock.yaml
+          else
+            echo "❌ pnpm-lock.yaml not found"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies..."
+          pnpm install --no-frozen-lockfile
+
+      - name: Install Juno CLI
+        run: pnpm add -g @junobuild/cli
+
+      - name: Deploy to Juno
+        run: juno deploy
+        env:
+          JUNO_TOKEN: ${{ secrets.JUNO_TOKEN }}

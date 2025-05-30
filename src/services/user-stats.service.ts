@@ -18,24 +18,29 @@ export class UserStatsService {
   static async getUserStats(userId: string): Promise<UserStats | null> {
     try {
       // ユーザーのレビューを取得
-      const reviewsResult = await listDocs({
-        collection: 'reviews',
-        filter: {
-          order: {
-            desc: true,
-            field: 'updated_at',
+      let userReviews: Review[] = [];
+      
+      try {
+        const reviewsResult = await listDocs({
+          collection: 'reviews',
+          filter: {
+            order: {
+              desc: true,
+              field: 'updated_at',
+            },
           },
-        },
-      });
+        });
 
-      const userReviews = reviewsResult.items
-        .map(item => ({
-          id: item.key,
-          ...item.data,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
-        } as Review))
-        .filter(review => review.authorId === userId);
+        userReviews = reviewsResult.items
+          .map(item => ({
+            id: item.key,
+            ...JSON.parse(item.data as string),
+          } as Review))
+          .filter(review => review.authorId === userId);
+      } catch (reviewError) {
+        console.warn('Reviews collection not found, using empty array');
+        userReviews = [];
+      }
 
       // レピュテーション情報を取得
       const reputation = await ReputationService.getUserReputation(userId);
@@ -51,26 +56,29 @@ export class UserStatsService {
       const reviewsByCategory: Record<string, number> = {};
       
       // レストラン情報を取得してカテゴリーを集計
-      for (const review of userReviews) {
-        try {
-          const restaurantResult = await listDocs({
-            collection: 'restaurants',
-            filter: {
-              order: {
-                desc: true,
-                field: 'updated_at',
-              },
+      try {
+        const restaurantResult = await listDocs({
+          collection: 'restaurants',
+          filter: {
+            order: {
+              desc: true,
+              field: 'updated_at',
             },
-          });
-          
+          },
+        });
+
+        for (const review of userReviews) {
           const restaurant = restaurantResult.items.find(item => item.key === review.restaurantId);
-          if (restaurant && restaurant.data.category) {
-            const category = restaurant.data.category as string;
-            reviewsByCategory[category] = (reviewsByCategory[category] || 0) + 1;
+          if (restaurant) {
+            const restaurantData = JSON.parse(restaurant.data as string);
+            if (restaurantData.category) {
+              const category = restaurantData.category as string;
+              reviewsByCategory[category] = (reviewsByCategory[category] || 0) + 1;
+            }
           }
-        } catch (error) {
-          console.error('Error fetching restaurant for review:', error);
         }
+      } catch (error) {
+        console.warn('Restaurants collection not found, skipping category analysis');
       }
 
       // 最近のレビュー（最新5件）
@@ -93,8 +101,8 @@ export class UserStatsService {
         totalReviews,
         averageRating,
         reputationScore,
-        helpfulVotes: reputation?.helpfulVotes || 0,
-        notHelpfulVotes: reputation?.notHelpfulVotes || 0,
+        helpfulVotes: reputation?.totalHelpfulVotes || 0,
+        notHelpfulVotes: reputation?.totalNotHelpfulVotes || 0,
         reviewsByCategory,
         recentReviews,
         authorWeight,

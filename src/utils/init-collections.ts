@@ -15,4 +15,10 @@ export async function initializeCollections() {
   // - user_reputation
   // - stats_restaurant_daily
   // - stats_restaurant_rolling
+  
+  // NOTE: Storage (for images) is configured separately in Juno
+  // You need to configure storage permissions in juno.dev console:
+  // 1. Go to your satellite on console.juno.build
+  // 2. Navigate to Storage -> Rules
+  // 3. Set appropriate permissions for image uploads
 }

@@ -3,39 +3,31 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { initSatellite } from '@junobuild/core';
 import { useAuth } from '@/contexts/auth-context';
 import { UserStatsService, UserStats } from '@/services/user-stats.service';
 import { UserStatsDashboard } from '@/components/user-stats-dashboard';
+import { TokenService } from '@/services/token.service';
 import type { Review } from '@/types/review';
 import type { Restaurant } from '@/types/restaurant';
 
 export default function MyPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isInitialized } = useAuth();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reviews'>('dashboard');
+  const [tokenBalance, setTokenBalance] = useState<number>(0);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    (async () => {
-      await initSatellite({
-        workers: {
-          auth: true,
-        },
-      });
+    if (!authLoading && !user) {
+      router.push('/');
+      return;
+    }
 
-      if (!authLoading && !user) {
-        router.push('/');
-        return;
-      }
-
-      if (user) {
-        loadUserStats();
-      }
-    })();
-  }, [authLoading, user, router]);
+    if (user && isInitialized) {
+      loadUserStats();
+    }
+  }, [authLoading, user, router, isInitialized]);
 
   const loadUserStats = async () => {
     if (!user?.key) return;
@@ -44,6 +36,11 @@ export default function MyPage() {
       setLoading(true);
       const stats = await UserStatsService.getUserStats(user.key);
       setUserStats(stats);
+      
+      // Canisterからトークン残高を取得
+      const balance = await TokenService.getBalance(user.key);
+      const formattedBalance = TokenService.formatTokenAmount(balance);
+      setTokenBalance(parseFloat(formattedBalance));
     } catch (error) {
       console.error('Failed to load user stats:', error);
     } finally {
@@ -140,7 +137,7 @@ export default function MyPage() {
       {/* メインコンテンツ */}
       <main className="py-8">
         {activeTab === 'dashboard' ? (
-          <UserStatsDashboard userStats={userStats} userName={userName} />
+          <UserStatsDashboard userStats={userStats} userName={userName} tokenBalance={tokenBalance} />
         ) : (
           <div className="max-w-4xl mx-auto p-6">
             <div className="bg-white rounded-2xl shadow-lg p-6">

@@ -64,72 +64,87 @@ export class ReviewVoteService {
   }
   
   static async getUserVoteForReview(reviewId: string, voterId: string): Promise<ReviewVote | null> {
-    const result = await listDocs({
-      collection: REVIEW_VOTES_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 1000
+    try {
+      const result = await listDocs({
+        collection: REVIEW_VOTES_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 1000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return null;
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      const vote = result.items
+        .map((doc) => ({
+          ...JSON.parse(doc.data as string),
+          id: doc.key
+        }))
+        .find((vote: ReviewVote) => vote.reviewId === reviewId && vote.voterId === voterId);
+      
+      return vote || null;
+    } catch (error) {
+      console.warn('Review votes collection not found, returning null');
       return null;
     }
-    
-    const vote = result.items
-      .map((doc) => ({
-        ...JSON.parse(doc.data as string),
-        id: doc.key
-      }))
-      .find((vote: ReviewVote) => vote.reviewId === reviewId && vote.voterId === voterId);
-    
-    return vote || null;
   }
   
   static async getVotesForReview(reviewId: string): Promise<{ helpful: number; notHelpful: number }> {
-    const result = await listDocs({
-      collection: REVIEW_VOTES_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 10000
+    try {
+      const result = await listDocs({
+        collection: REVIEW_VOTES_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 10000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return { helpful: 0, notHelpful: 0 };
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      const votes = result.items
+        .map((doc) => JSON.parse(doc.data as string))
+        .filter((vote: ReviewVote) => vote.reviewId === reviewId);
+      
+      const helpful = votes.filter((vote: ReviewVote) => vote.voteType === 'helpful').length;
+      const notHelpful = votes.filter((vote: ReviewVote) => vote.voteType === 'not_helpful').length;
+      
+      return { helpful, notHelpful };
+    } catch (error) {
+      console.warn('Review votes collection not found, returning zero counts');
       return { helpful: 0, notHelpful: 0 };
     }
-    
-    const votes = result.items
-      .map((doc) => JSON.parse(doc.data as string))
-      .filter((vote: ReviewVote) => vote.reviewId === reviewId);
-    
-    const helpful = votes.filter((vote: ReviewVote) => vote.voteType === 'helpful').length;
-    const notHelpful = votes.filter((vote: ReviewVote) => vote.voteType === 'not_helpful').length;
-    
-    return { helpful, notHelpful };
   }
   
   static async getVotesByUser(userId: string): Promise<ReviewVote[]> {
-    const result = await listDocs({
-      collection: REVIEW_VOTES_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 10000
+    try {
+      const result = await listDocs({
+        collection: REVIEW_VOTES_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 10000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return [];
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      return result.items
+        .map((doc) => ({
+          ...JSON.parse(doc.data as string),
+          id: doc.key
+        }))
+        .filter((vote: ReviewVote) => vote.voterId === userId);
+    } catch (error) {
+      console.warn('Review votes collection not found, returning empty array');
       return [];
     }
-    
-    return result.items
-      .map((doc) => ({
-        ...JSON.parse(doc.data as string),
-        id: doc.key
-      }))
-      .filter((vote: ReviewVote) => vote.voterId === userId);
   }
 }

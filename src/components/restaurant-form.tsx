@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Restaurant, RestaurantCategory } from '@/types/restaurant';
+import { ImageUpload } from '@/components/image-upload';
 
 interface RestaurantFormProps {
   onSubmit: (restaurant: Omit<Restaurant, 'id'>) => void;
@@ -142,9 +143,25 @@ export function RestaurantForm({ onSubmit, onCancel }: RestaurantFormProps) {
         />
       </div>
 
+      {/* 画像アップロード */}
+      <div>
+        <ImageUpload
+          label="レストランの画像"
+          maxImages={1}
+          existingImages={formData.imageUrl ? [formData.imageUrl] : []}
+          onImagesUploaded={(urls) => {
+            setFormData({ ...formData, imageUrl: urls[0] || '' });
+          }}
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          アップロードできない場合は、下の画像URL欄に直接URLを入力してください
+        </p>
+      </div>
+      
+      {/* 画像URL（フォールバック） */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          画像URL
+          画像URL（直接入力）
         </label>
         <input
           type="url"

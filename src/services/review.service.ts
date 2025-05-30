@@ -49,53 +49,63 @@ export class ReviewService {
   }
   
   static async getRestaurantReviews(restaurantId: string): Promise<Review[]> {
-    const result = await listDocs({
-      collection: REVIEW_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 1000
+    try {
+      const result = await listDocs({
+        collection: REVIEW_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 1000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return [];
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      return result.items
+        .map((doc) => ({
+          ...JSON.parse(doc.data as string),
+          id: doc.key
+        }))
+        .filter((review: Review) => review.restaurantId === restaurantId)
+        .sort((a: Review, b: Review) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    } catch (error) {
+      console.warn('Reviews collection not found, returning empty array');
       return [];
     }
-    
-    return result.items
-      .map((doc) => ({
-        ...JSON.parse(doc.data as string),
-        id: doc.key
-      }))
-      .filter((review: Review) => review.restaurantId === restaurantId)
-      .sort((a: Review, b: Review) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
   }
   
   static async getUserReviews(authorId: string): Promise<Review[]> {
-    const result = await listDocs({
-      collection: REVIEW_COLLECTION,
-      filter: {
-        paginate: {
-          limit: 1000
+    try {
+      const result = await listDocs({
+        collection: REVIEW_COLLECTION,
+        filter: {
+          paginate: {
+            limit: 1000
+          }
         }
+      });
+      
+      if (!result || !result.items) {
+        return [];
       }
-    });
-    
-    if (!result || !result.items) {
+      
+      return result.items
+        .map((doc) => ({
+          ...JSON.parse(doc.data as string),
+          id: doc.key
+        }))
+        .filter((review: Review) => review.authorId === authorId)
+        .sort((a: Review, b: Review) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    } catch (error) {
+      console.warn('Reviews collection not found, returning empty array');
       return [];
     }
-    
-    return result.items
-      .map((doc) => ({
-        ...JSON.parse(doc.data as string),
-        id: doc.key
-      }))
-      .filter((review: Review) => review.authorId === authorId)
-      .sort((a: Review, b: Review) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
   }
   
   static async updateReview(id: string, updates: Partial<Review>): Promise<Review | null> {

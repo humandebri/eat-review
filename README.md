@@ -121,7 +121,7 @@ reputationScore = normalize(log10(1 + helpfulVotes) - log10(1 + notHelpfulVotes)
 - ✅ 統計・分析機能
 
 ### Phase 2: 拡張機能 (2024 Q2)
-- [ ] 画像アップロード（IPFS統合）
+- [x] 画像アップロード（Juno Storage統合）
 - [ ] NFTバッジシステム
 - [ ] モバイルアプリ
 
@@ -167,6 +167,20 @@ Eat Reviewは、ブロックチェーン技術を活用して食文化の発展�
 - **GitHub**: https://github.com/humandebri/eat-review
 - **Discord**: [準備中]
 - **Twitter**: [準備中]
+
+## 11. Juno Storage設定手順
+
+画像アップロード機能を使用するには、Juno Consoleでストレージの設定が必要です：
+
+1. [console.juno.build](https://console.juno.build)にアクセス
+2. あなたのSatelliteを選択
+3. **Storage** → **Rules**に移動
+4. 以下のルールを設定：
+   - **Read**: Public（誰でも画像を閲覧可能）
+   - **Write**: Authenticated（ログインユーザーのみアップロード可能）
+   - **Max Size**: 5MB（画像サイズ制限）
+
+これにより、ユーザーがレストランやレビューの画像をアップロードできるようになります。
 
 ---
 
