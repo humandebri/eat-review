@@ -14,7 +14,7 @@ export default function AdminPage() {
 
   // 管理者のプリンシパルID（あなたのプリンシパルIDに置き換えてください）
   const ADMIN_PRINCIPALS = [
-    'YOUR_PRINCIPAL_ID_HERE', // TODO: あなたのプリンシパルIDに置き換える
+    'xc3ky-ucw5v-tmdxu-fq5vu-ybydk-xfgb2-zyfbm-batpk-fu6a5-gikpn-gqe', // 管理者のプリンシパルID
   ];
 
   useEffect(() => {
